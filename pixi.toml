@@ -1,0 +1,22 @@
+[project]
+authors = ["Zend <zendwang040302@outlook.com>"]
+channels = ["conda-forge"]
+description = "Add a short description here"
+name = "rl-crashcourse"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+python = "3.12.*"
+
+[pypi-dependencies]
+torch = ">=2.6.0, <3"
+numpy = ">=2.2.2, <3"
+matplotlib = ">=3.10.0, <4"
+swig = ">=4.3.0, <5"
+gymnasium = { version = ">=1.0.0, <2", extras = ["box2d"] }
+wandb = ">=0.19.6, <0.20"
+tqdm = ">=4.67.1, <5"
+lightning = ">=2.5.0.post0, <3"
