@@ -17,7 +17,6 @@ class ActorNetwork(nn.Module):
         self.fc2 = nn.Linear(128, 128)
         self.mean_layer = nn.Linear(128, action_dim)
         self.logstd_layer = nn.Linear(128, action_dim)
-
         self.apply(self.init_weights)
 
     @staticmethod
@@ -40,7 +39,6 @@ class CriticNetwork(nn.Module):
         self.fc1 = nn.Linear(state_dim, 128)
         self.fc2 = nn.Linear(128, 128)
         self.value_layer = nn.Linear(128, 1)
-
         self.apply(self.init_weights)
 
     @staticmethod
@@ -54,7 +52,6 @@ class CriticNetwork(nn.Module):
         x = torch.relu(self.fc2(x))
         value = self.value_layer(x)
         return value
-
 
 class ActorCriticTrainer:
     def __init__(self, env, actor_model, critic_model, actor_optimizer, critic_optimizer, gamma=0.99):
@@ -75,9 +72,6 @@ class ActorCriticTrainer:
         return torch.tensor(discounted_rewards, dtype=torch.float32).to(device)
 
     def train(self, num_episodes=5000):
-        epsilon = 0.9
-        epsilon_decay = 0.99
-        min_epsilon = 0.001
         for episode in trange(num_episodes):
             state, _ = self.env.reset()
             state = torch.FloatTensor(state).to(device)
@@ -94,31 +88,29 @@ class ActorCriticTrainer:
                 action = dist.sample()
                 log_prob = dist.log_prob(action).sum()
                 action_clamped = torch.clamp(action, min=-2, max=2)
-                if np.random.random() < epsilon:
-                    action = self.env.action_space.sample()
                 value = self.critic_model(state)
 
                 next_state, reward, done, truncated, _ = self.env.step(action_clamped.cpu().numpy())
 
                 rewards.append(reward)
                 log_probs.append(log_prob)
-                values.append(value)
+                values.append(value.squeeze())
                 state = torch.FloatTensor(next_state).to(device)
 
             if len(rewards) == 0:
                 continue
 
             returns = self.compute_returns(rewards)
-            returns = (returns - returns.mean()) / (returns.std() + 1e-5)
-
-            log_probs = torch.stack(log_probs)
-            values = torch.stack(values).squeeze(-1)
-
+            values = torch.stack(values)
+            
             advantages = returns - values.detach()
-
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+            
+            log_probs = torch.stack(log_probs)
+            
+            actor_loss = -torch.mean(log_probs * advantages)
+            
             critic_loss = nn.MSELoss()(values, returns)
-
-            actor_loss = -1e1 * torch.mean(log_probs * advantages)
 
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
@@ -142,10 +134,9 @@ class ActorCriticTrainer:
 
             if episode % 100 == 0:
                 print(f"Episode {episode}, Reward: {total_reward:.1f}")
-            epsilon = max(epsilon * epsilon_decay, min_epsilon)
 
 def main():
-    wandb.init(project="rl")
+    wandb.init(project="rl-fixed")
     env = gym.make("Pendulum-v1", g=0)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
@@ -153,31 +144,30 @@ def main():
     actor_model = ActorNetwork(state_dim, action_dim).to(device)
     critic_model = CriticNetwork(state_dim).to(device)
 
-    actor_optimizer = optim.Adam(actor_model.parameters(), lr=8e-5)
-    critic_optimizer = optim.Adam(critic_model.parameters(), lr=8e-5)
+    actor_optimizer = optim.Adam(actor_model.parameters(), lr=3e-4)
+    critic_optimizer = optim.Adam(critic_model.parameters(), lr=1e-3)
 
     trainer = ActorCriticTrainer(env, actor_model, critic_model, actor_optimizer, critic_optimizer, gamma=0.99)
     trainer.train()
 
-    torch.save(actor_model.state_dict(), "actor_model_a2c.pth")
-    torch.save(critic_model.state_dict(), "critic_model_a2c.pth")
+    torch.save(actor_model.state_dict(), "actor_fixed.pth")
+    torch.save(critic_model.state_dict(), "critic_fixed.pth")
     test(actor_model)
 
 def test(actor_model):
     env = gym.make("Pendulum-v1", render_mode="human", g=0)
     state, _ = env.reset()
     total_reward = 0
-
     while True:
         with torch.no_grad():
             state_tensor = torch.FloatTensor(state).to(device)
             mean, logstd = actor_model(state_tensor)
             action = torch.clamp(Normal(mean, torch.exp(logstd)).sample(), min=-2, max=2)
-            next_state, reward, done, _, _ = env.step(action.cpu().numpy())
-            total_reward += reward
-            state = next_state
-            if done:
-                break
+        next_state, reward, done, _, _ = env.step(action.cpu().numpy())
+        total_reward += reward
+        state = next_state
+        if done:
+            break
     print(f"Test Reward: {total_reward:.1f}")
     env.close()
 
