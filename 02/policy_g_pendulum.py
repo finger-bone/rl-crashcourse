@@ -13,13 +13,10 @@ print(f"Using device: {device}")
 class PolicyNetwork(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(PolicyNetwork, self).__init__()
-        self.fc1 = nn.Linear(state_dim, 128)
-        self.fc2 = nn.Linear(128, 128)
-        self.mean_layer = nn.Linear(128, action_dim)
-
-        self.fc11 = nn.Linear(state_dim, 128) # 与 mean 分支对称
-        self.fc12 = nn.Linear(128, 128) # 与 mean 分支对称
-        self.logstd_layer = nn.Linear(128, action_dim) # 与 mean 分支对称
+        self.fc1 = nn.Linear(state_dim, 1024)
+        self.fc2 = nn.Linear(1024, 1024)
+        self.mean_layer = nn.Linear(1024, action_dim)
+        self.logstd_layer = nn.Linear(1024, action_dim)
 
 
         self.apply(self.init_weights)
@@ -32,12 +29,9 @@ class PolicyNetwork(nn.Module):
 
     def forward(self, state):
         x = torch.relu(self.fc1(state))
-        x = torch.relu(self.fc2(x))
-        mean = torch.tanh(self.mean_layer(x)) * 2
-
-        xx = torch.relu(self.fc11(state)) # 与 x 计算对称
-        xx = torch.relu(self.fc12(xx)) # 与 x 计算对称
-        logstd = self.logstd_layer(xx)
+        x = torch.relu(self.fc2(x) + x)
+        mean = self.mean_layer(x)
+        logstd = self.logstd_layer(x)
         return mean, logstd
 
 class PolicyGradientTrainer:
@@ -56,7 +50,10 @@ class PolicyGradientTrainer:
             discounted_rewards.insert(0, running_return)
         return torch.tensor(discounted_rewards, dtype=torch.float32).to(device)
 
-    def train(self, num_episodes=5000):
+    def train(self, num_episodes=3000):
+        epsilon = 0.9
+        epsilon_decay = 0.99
+        min_epsilon = 0.001
         for episode in trange(num_episodes):
             state, _ = self.env.reset()
             state = torch.FloatTensor(state).to(device)
@@ -64,23 +61,22 @@ class PolicyGradientTrainer:
             truncated = False
             rewards = []
             log_probs = []
-
-            while not done and not truncated:
+            cnt = 0
+            while not done and cnt < 200:
+                cnt += 1
                 mean, logstd = self.model(state)
-                std = torch.exp(logstd) # 移除 / 100
+                std = torch.exp(logstd)
                 dist = Normal(mean, std)
                 action = dist.sample()
                 log_prob = dist.log_prob(action).sum()
-
                 action_clamped = torch.clamp(action, min=-2, max=2)
-
                 next_state, reward, done, truncated, _ = self.env.step(action_clamped.cpu().numpy())
-
-
                 rewards.append(reward)
                 log_probs.append(log_prob)
                 state = torch.FloatTensor(next_state).to(device)
-
+            if np.random.random() < epsilon:
+                # Choose a random action
+                action = torch.FloatTensor(self.env.action_space.sample()).to(device)
             if len(rewards) == 0:
                 continue
 
@@ -88,7 +84,7 @@ class PolicyGradientTrainer:
             returns = (returns - returns.mean()) / (returns.std() + 1e-5)
 
             log_probs = torch.stack(log_probs)
-            loss = -torch.mean(log_probs * returns)
+            loss = -1e4 * torch.mean(log_probs * returns)
 
             self.optimizer.zero_grad()
             loss.backward()
@@ -108,12 +104,13 @@ class PolicyGradientTrainer:
 
             if episode % 100 == 0:
                 print(f"Episode {episode}, Reward: {total_reward:.1f}, Loss: {loss.item():.4f}, Mean Std: {std.mean().item():.4f}") # 打印 loss 和 std
+            epsilon = max(epsilon * epsilon_decay, min_epsilon)
 
 def main():
     wandb.init(project="rl")
-    env = gym.make("Pendulum-v1")
+    env = gym.make("Pendulum-v1", g=0)
     model = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0]).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=3e-4) # 尝试增大 lr
+    optimizer = optim.SGD(model.parameters(), lr=5e-3)
 
     trainer = PolicyGradientTrainer(env, model, optimizer, gamma=0.99)
     trainer.train()
@@ -122,7 +119,7 @@ def main():
     test(model)
 
 def test(model):
-    env = gym.make("Pendulum-v1", render_mode="human")
+    env = gym.make("Pendulum-v1", g=0, render_mode="human")
     state, _ = env.reset()
     total_reward = 0
 

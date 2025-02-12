@@ -29,7 +29,7 @@ class ActorNetwork(nn.Module):
     def forward(self, state):
         x = torch.relu(self.fc1(state))
         x = torch.relu(self.fc2(x))
-        mean = torch.tanh(self.mean_layer(x)) * 2
+        mean = self.mean_layer(x)
         logstd = self.logstd_layer(x)
         logstd = torch.clamp(logstd, min=-20, max=2)
         return mean, logstd
@@ -75,6 +75,9 @@ class ActorCriticTrainer:
         return torch.tensor(discounted_rewards, dtype=torch.float32).to(device)
 
     def train(self, num_episodes=5000):
+        epsilon = 0.9
+        epsilon_decay = 0.99
+        min_epsilon = 0.001
         for episode in trange(num_episodes):
             state, _ = self.env.reset()
             state = torch.FloatTensor(state).to(device)
@@ -86,12 +89,13 @@ class ActorCriticTrainer:
 
             while not done and not truncated:
                 mean, logstd = self.actor_model(state)
-                std = torch.exp(logstd) / 100
+                std = torch.exp(logstd)
                 dist = Normal(mean, std)
                 action = dist.sample()
                 log_prob = dist.log_prob(action).sum()
                 action_clamped = torch.clamp(action, min=-2, max=2)
-
+                if np.random.random() < epsilon:
+                    action = self.env.action_space.sample()
                 value = self.critic_model(state)
 
                 next_state, reward, done, truncated, _ = self.env.step(action_clamped.cpu().numpy())
@@ -114,7 +118,7 @@ class ActorCriticTrainer:
 
             critic_loss = nn.MSELoss()(values, returns)
 
-            actor_loss = -torch.mean(log_probs * advantages)
+            actor_loss = -1e1 * torch.mean(log_probs * advantages)
 
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
@@ -138,18 +142,19 @@ class ActorCriticTrainer:
 
             if episode % 100 == 0:
                 print(f"Episode {episode}, Reward: {total_reward:.1f}")
+            epsilon = max(epsilon * epsilon_decay, min_epsilon)
 
 def main():
     wandb.init(project="rl")
-    env = gym.make("Pendulum-v1")
+    env = gym.make("Pendulum-v1", g=0)
     state_dim = env.observation_space.shape[0]
     action_dim = env.action_space.shape[0]
 
     actor_model = ActorNetwork(state_dim, action_dim).to(device)
     critic_model = CriticNetwork(state_dim).to(device)
 
-    actor_optimizer = optim.Adam(actor_model.parameters(), lr=1e-6)
-    critic_optimizer = optim.Adam(critic_model.parameters(), lr=1e-6)
+    actor_optimizer = optim.Adam(actor_model.parameters(), lr=8e-5)
+    critic_optimizer = optim.Adam(critic_model.parameters(), lr=8e-5)
 
     trainer = ActorCriticTrainer(env, actor_model, critic_model, actor_optimizer, critic_optimizer, gamma=0.99)
     trainer.train()
@@ -159,7 +164,7 @@ def main():
     test(actor_model)
 
 def test(actor_model):
-    env = gym.make("Pendulum-v1", render_mode="human")
+    env = gym.make("Pendulum-v1", render_mode="human", g=0)
     state, _ = env.reset()
     total_reward = 0
 
