@@ -5,4 +5,3 @@
 - [Actor-Critic](notes/03.md)
 - [PPO](notes/04.md)
 - [GRPO](notes/05.md)
-- [RL for LLM](notes/06.md)
