@@ -12,3 +12,8 @@ nav:
 - Actor-Critic: 03.md
 - PPO: 04.md
 - GRPO: 05.md
+
+extra_javascript:
+- https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML
+markdown_extensions:
+- mdx_math
