@@ -137,7 +137,7 @@ J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
 <p>Of course, if you use <script type="math/tex">Q(s, a)</script>, then the Critic model is identical to Q-learning. That is, instead of estimating the state-value function <script type="math/tex">V(s)</script>, the Critic estimates the action-value function directly. In this case, the Critic is trained to minimize the loss,</p>
 <p>
 <script type="math/tex; mode=display">
- L = (r + \gamma \max_{a'} Q(s', a'), - Q(s, a)) ^ 2
+ L = (r + \gamma \max_{a'} Q(s', a') - Q(s, a)) ^ 2
 </script>
 </p>
 <h3 id="combing-actor-and-critic">Combing Actor and Critic</h3>
