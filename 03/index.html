@@ -103,21 +103,27 @@
 <p>Actor-Critic is an algorithm that uses two models. <strong>Actor</strong>, the policy network, is responsible for selecting actions given a state, while <strong>Critic</strong>, the value network, evaluates the actions taken by the Actor by estimating the value function. This combination allows the algorithm to benefit from both policy-based and value-based methods.</p>
 <h3 id="actor">Actor</h3>
 <p>The Actor represents the policy $\pi(a|s)$, which is usually parameterized by a neural network. Given a state $s$, the network outputs a probability distribution over actions, or parameters of a distribution (for example, mean and standard deviation in the case of a Gaussian policy). The objective is to maximize the expected return:</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
 J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
-$$</p>
+</script>
+</p>
 <p>where $R$ is the cumulative reward. The policy parameters $\theta$ are updated using gradient ascent based on the policy gradient:</p>
-<p>$$
-\nabla_{\theta} J(\pi_{\theta}) = \mathbb{E}<em>{\pi</em>{\theta}}\left[ \nabla_{\theta} \log \pi_{\theta}(a|s) Q^{\pi}(s, a) \right]
-$$</p>
+<p>
+<script type="math/tex; mode=display">
+\nabla_{\theta} J(\pi_{\theta}) = \mathbb{E}_{\pi_{\theta}}\left[ \nabla_{\theta} \log \pi_{\theta}(a|s) Q^{\pi}(s, a) \right]
+</script>
+</p>
 <p>with $Q^{\pi}(s, a)$ representing the action-value function.</p>
 <p>This is identical to the policy gradient method, using the value given out by the critic network as the advantage function.</p>
 <h3 id="critic">Critic</h3>
 <p>The Critic estimates the value function, which can be either the state-value function $V(s)$ or the action-value function $Q(s, a)$. Its main role is to provide feedback to the Actor regarding the quality of actions taken.</p>
 <p>The Critic minimizes the mean squared error,</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
  L = (r + \gamma V(s') - V(s)) ^ 2 
-$$</p>
+</script>
+</p>
 <p>where:</p>
 <ul>
 <li>$r$ is the immediate reward,</li>
@@ -126,9 +132,11 @@ $$</p>
 </ul>
 <p>updating its parameters $\phi$ accordingly.</p>
 <p>Of course, if you use $Q(s, a)$, then the Critic model is identical to Q-learning. That is, instead of estimating the state-value function $V(s)$, the Critic estimates the action-value function directly. In this case, the Critic is trained to minimize the loss,</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
  L = (r + \gamma \max_{a'} Q(s', a'), - Q(s, a)) ^ 2
-$$</p>
+</script>
+</p>
 <h3 id="combing-actor-and-critic">Combing Actor and Critic</h3>
 <p>In an Actor-Critic framework, both the Actor and the Critic are trained simultaneously and interact with each other during the learning process. Here’s how the two models work together:</p>
 <ol>
@@ -148,36 +156,46 @@ $$</p>
 <ul>
 <li>
 <p>If using $V(s)$, the Temporal Difference (TD) error (also known as GAE generalized advantage estimation) is computed as:</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
  \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t).
- $$</p>
+ </script>
+</p>
 </li>
 <li>
 <p>If using $Q(s,a)$, a similar TD error (or Bellman error) is computed based on the Q-learning target:</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
  \delta_t = r_t + \gamma \max_{a'} Q(s_{t+1}, a') - Q(s_t,a_t).
- $$</p>
+ </script>
+</p>
 </li>
 <li>
 <p><strong>Critic Update:</strong><br />
    The Critic’s parameters $\phi$ are updated to minimize the squared TD error:</p>
 </li>
 </ul>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
    L(\phi) = \delta_t^2.
-   $$</p>
+   </script>
+</p>
 <p>The gradient descent update for the Critic is:</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
    \phi \leftarrow \phi - \beta \nabla_{\phi} \left( \delta_t^2 \right),
-   $$</p>
+   </script>
+</p>
 <p>where $\beta$ is the learning rate for the Critic.</p>
 <ol>
 <li><strong>Actor Update:</strong><br />
    The Actor is updated using the policy gradient method, with the advantage (previously, reward, but now, the value) serving as the weight. The update rule for the Actor’s parameters $\theta$ is:</li>
 </ol>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
    \theta \leftarrow \theta + \alpha \, \delta_t \nabla_{\theta} \log \pi_{\theta}(a_t|s_t),
-   $$</p>
+   </script>
+</p>
 <p>where $\alpha$ is the Actor’s learning rate. This update increases the probability of actions that yield a positive advantage (i.e., better-than-expected outcomes) and decreases it for actions with a negative advantage.</p>
 <h2 id="implementation">Implementation</h2>
 <p>Using actor-critic algorithm leads to faster convergence. However, the task is still too complicated with gravity.</p>
@@ -371,6 +389,7 @@ if __name__ == &quot;__main__&quot;:
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
         <script src="../js/base.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script src="../search/main.js"></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">

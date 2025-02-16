@@ -104,9 +104,11 @@
 <p>Policy gradient algorithm is still model-free, online-learning, and trial-and-error based, but it allows for continuous actions.</p>
 <p>Our model should give our a distribution of all the actions. That is, for continuous case, giving out the mean and variance for each input (assume we ust gaussian distribution), and for discreet case, giving out a softmax-ed vector.</p>
 <p>The major equation is the loss function:</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
 L(\theta) = -\mathbb{E} \big[ \log \pi_\theta(a|s) \cdot A \big]
-$$</p>
+</script>
+</p>
 <p>Here:
 - $\pi_\theta(a|s)$: The policy, which gives the probability of taking action $a$ in state $s$.
 - $A$: The advantage value. For now, it can equal to the cumulative reward for the given action.
@@ -130,9 +132,10 @@ $$</p>
 <p><strong>Compute Discounted Rewards</strong>:</p>
 </li>
 <li>For each step $t$, compute the discounted return:
-     $$
+     <script type="math/tex; mode=display">
      R_t = \sum_{k=t}^T \gamma^{k-t} r_k
-     $$</li>
+     </script>
+</li>
 <li>
 <p>Here, $\gamma$ is the discount factor, and $T$ is the episode length.</p>
 </li>
@@ -140,9 +143,10 @@ $$</p>
 <p><strong>Calculate the Loss</strong>:</p>
 </li>
 <li>Use the loss function:
-     $$
+     <script type="math/tex; mode=display">
      L(\theta) = -\frac{1}{N} \sum_{t=1}^N \log \pi_\theta(a_t | s_t) \cdot R_t
-     $$</li>
+     </script>
+</li>
 <li>
 <p>This adjusts the policy to favor actions that lead to higher rewards.</p>
 </li>
@@ -306,6 +310,7 @@ if __name__ == &quot;__main__&quot;:
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
         <script src="../js/base.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script src="../search/main.js"></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">

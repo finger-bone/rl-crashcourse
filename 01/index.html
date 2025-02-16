@@ -133,7 +133,9 @@ env = gym.make('CartPole-v0')
 <p>Q-Learning was originally proposed by Chris Watkins in 1989, applied to traditional ML algorithms. However, we use NN instead here.</p>
 <p>Q-Learning aims to give every action a Q-value, which represents the expected total reward the agent will receive if it takes that action in a given state. The agent then selects the action with the highest Q-value, known as the greedy exploitation. However, during training, this typically prohibits the model to choose other options, so the stratagem used during training is usually randomized-greedy. That is, having a small chance of randomly choosing an action, or most of the time, choose the action greedily.</p>
 <p>The Q-Learning algorithm is based on the following equation:</p>
-<p>$$Q_{next}(s, a) = Q(s, a) + \alpha \cdot (r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a))$$</p>
+<p>
+<script type="math/tex; mode=display">Q_{next}(s, a) = Q(s, a) + \alpha \cdot (r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a))</script>
+</p>
 <p>where:</p>
 <ul>
 <li>$Q(s, a)$ is the Q-value of the state-action pair $(s, a)$.</li>
@@ -145,7 +147,9 @@ env = gym.make('CartPole-v0')
 </ul>
 <p>This equation means that, the expected Q-value for the current $a, s$ pair is expected to be $r + \gamma \cdot \max_{a'} Q(s', a')$, which means is the current reward plus the most optimal Q-value of the future with a decay of $gamma$.</p>
 <p>This is for the more traditional ML method. For the NN method, we use the following loss function:</p>
-<p>$$L = \left( r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a) \right)^2$$</p>
+<p>
+<script type="math/tex; mode=display">L = \left( r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a) \right)^2</script>
+</p>
 <p>Obviously this is just a rewritten form for the previous equation, when we assume the output of the model is a Q-value tensor, because if we take gradient for that loss, the update step becomes the same as the previous equation.</p>
 <p>$a'$ can be approximated by the current model. That is, what the current model would do under the given state $s'$.</p>
 <h2 id="implementation">Implementation</h2>
@@ -264,6 +268,7 @@ test_env.close()
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
         <script src="../js/base.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script src="../search/main.js"></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">

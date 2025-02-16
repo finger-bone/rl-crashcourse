@@ -117,12 +117,14 @@
 <p>The core idea of GRPO is to optimize the policy by comparing the outputs of the new policy with a group of outputs from the old policy. This "group relative" comparison ensures that the updates are more stable and reliable. Instead of relying on a value function to estimate the advantage, GRPO uses relative rewards computed from multiple samples.</p>
 <h2 id="objective-function-of-grpo">Objective Function of GRPO</h2>
 <p>The objective function of GRPO can be formulated as:</p>
-<p>$$
+<p>
+<script type="math/tex; mode=display">
 L^{GRPO}(\theta) = \mathbb{E}\left[
 \sum_{i = 1}^{G}\left(\min \left(\frac{\pi_{\theta}\left(o_{i}\right)}{\pi_{\theta_{\text{old}}}\left(o_{i}\right)} A_{i},
-\text{clip}\left(\frac{\pi_{\theta}\left(o_{i}\right)}{\pi_{\theta_{\text{old}}}\left(o_{i}\right)}, 1-\varepsilon, 1+\varepsilon\right) A_{i}\right)\right) - \beta \mathbb{D}<em>{KL}\left(\pi</em>{\theta} | \pi_{\text{ref}}\right)
+\text{clip}\left(\frac{\pi_{\theta}\left(o_{i}\right)}{\pi_{\theta_{\text{old}}}\left(o_{i}\right)}, 1-\varepsilon, 1+\varepsilon\right) A_{i}\right)\right) - \beta \mathbb{D}_{KL}\left(\pi_{\theta} \| \pi_{\text{ref}}\right)
 \right]
-$$</p>
+</script>
+</p>
 <p>Where:
 - $A_{i} = \frac{r_{i} - \mathrm{mean}({r_1, r_2, \cdots, r_G})}{\mathrm{std}({r_1, r_2, \cdots, r_G})}$ is the normalized advantage computed from a group of samples. Please note that, in GRPO, we use this group-normalized reward instead of GAE. The latter requires a critic model, which we do not have in GRPO.
 - $\pi_{\theta}$ and $\pi_{\theta_{\text{old}}}$ are the new and old policies, respectively.
@@ -347,6 +349,7 @@ if __name__ == &quot;__main__&quot;:
                 shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
         </script>
         <script src="../js/base.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
         <script src="../search/main.js"></script>
 
         <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
