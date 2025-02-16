@@ -110,10 +110,10 @@ L(\theta) = -\mathbb{E} \big[ \log \pi_\theta(a|s) \cdot A \big]
 </script>
 </p>
 <p>Here:
-- $\pi_\theta(a|s)$: The policy, which gives the probability of taking action $a$ in state $s$.
-- $A$: The advantage value. For now, it can equal to the cumulative reward for the given action.
+- <script type="math/tex">\pi_\theta(a|s)</script>: The policy, which gives the probability of taking action <script type="math/tex">a</script> in state <script type="math/tex">s</script>.
+- <script type="math/tex">A</script>: The advantage value. For now, it can equal to the cumulative reward for the given action.
 - The negative sign ensures we maximize rewards (since optimization minimizes the loss).
-- $\mathbb{E}$ is done over all actions in an episode.</p>
+- <script type="math/tex">\mathbb{E}</script> is done over all actions in an episode.</p>
 <h3 id="steps-for-policy-gradient-algorithm">Steps for Policy Gradient Algorithm:</h3>
 <ol>
 <li><strong>Initialize the Policy Network</strong>: </li>
@@ -131,13 +131,13 @@ L(\theta) = -\mathbb{E} \big[ \log \pi_\theta(a|s) \cdot A \big]
 <li>
 <p><strong>Compute Discounted Rewards</strong>:</p>
 </li>
-<li>For each step $t$, compute the discounted return:
+<li>For each step <script type="math/tex">t</script>, compute the discounted return:
      <script type="math/tex; mode=display">
      R_t = \sum_{k=t}^T \gamma^{k-t} r_k
      </script>
 </li>
 <li>
-<p>Here, $\gamma$ is the discount factor, and $T$ is the episode length.</p>
+<p>Here, <script type="math/tex">\gamma</script> is the discount factor, and <script type="math/tex">T</script> is the episode length.</p>
 </li>
 <li>
 <p><strong>Calculate the Loss</strong>:</p>
@@ -153,7 +153,7 @@ L(\theta) = -\mathbb{E} \big[ \log \pi_\theta(a|s) \cdot A \big]
 <li>
 <p><strong>Update the Policy</strong>:</p>
 </li>
-<li>Perform gradient descent on the loss $L(\theta)$ to update the policy parameters $\theta$.</li>
+<li>Perform gradient descent on the loss <script type="math/tex">L(\theta)</script> to update the policy parameters <script type="math/tex">\theta</script>.</li>
 </ol>
 <h2 id="implementation">Implementation</h2>
 <p>Please note that typically, policy gradient has worse performance under such a raw implementation. A better way would be to sample action space into discreet value then, use Q-learning. But policy gradient is the basis of many other methods, and so we still need to learn it.</p>

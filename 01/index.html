@@ -138,20 +138,27 @@ env = gym.make('CartPole-v0')
 </p>
 <p>where:</p>
 <ul>
-<li>$Q(s, a)$ is the Q-value of the state-action pair $(s, a)$.</li>
-<li>$\alpha$ is the learning rate.</li>
-<li>$r$ is the reward received after taking action $a$ in state $s$.</li>
-<li>$\gamma$ is the discount factor.</li>
-<li>$s'$ is the next state.</li>
-<li>$a'$ is the next action.</li>
+<li>
+<script type="math/tex">Q(s, a)</script> is the Q-value of the state-action pair <script type="math/tex">(s, a)</script>.</li>
+<li>
+<script type="math/tex">\alpha</script> is the learning rate.</li>
+<li>
+<script type="math/tex">r</script> is the reward received after taking action <script type="math/tex">a</script> in state <script type="math/tex">s</script>.</li>
+<li>
+<script type="math/tex">\gamma</script> is the discount factor.</li>
+<li>
+<script type="math/tex">s'</script> is the next state.</li>
+<li>
+<script type="math/tex">a'</script> is the next action.</li>
 </ul>
-<p>This equation means that, the expected Q-value for the current $a, s$ pair is expected to be $r + \gamma \cdot \max_{a'} Q(s', a')$, which means is the current reward plus the most optimal Q-value of the future with a decay of $gamma$.</p>
+<p>This equation means that, the expected Q-value for the current <script type="math/tex">a, s</script> pair is expected to be <script type="math/tex">r + \gamma \cdot \max_{a'} Q(s', a')</script>, which means is the current reward plus the most optimal Q-value of the future with a decay of <script type="math/tex">gamma</script>.</p>
 <p>This is for the more traditional ML method. For the NN method, we use the following loss function:</p>
 <p>
 <script type="math/tex; mode=display">L = \left( r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a) \right)^2</script>
 </p>
 <p>Obviously this is just a rewritten form for the previous equation, when we assume the output of the model is a Q-value tensor, because if we take gradient for that loss, the update step becomes the same as the previous equation.</p>
-<p>$a'$ can be approximated by the current model. That is, what the current model would do under the given state $s'$.</p>
+<p>
+<script type="math/tex">a'</script> can be approximated by the current model. That is, what the current model would do under the given state <script type="math/tex">s'</script>.</p>
 <h2 id="implementation">Implementation</h2>
 <p>DQN means Deep Q-learning Network. It is a NN based Q-learning algorithm. We will implement it here.</p>
 <p>This is just a simple MLP model. You can use any other architecture you like. The training process is identical to previous equations, except that the <code>max</code> function is replaced by an approximation of the current model (as the reference model).</p>

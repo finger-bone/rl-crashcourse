@@ -102,22 +102,22 @@
 <h2 id="actor-critic">Actor-Critic</h2>
 <p>Actor-Critic is an algorithm that uses two models. <strong>Actor</strong>, the policy network, is responsible for selecting actions given a state, while <strong>Critic</strong>, the value network, evaluates the actions taken by the Actor by estimating the value function. This combination allows the algorithm to benefit from both policy-based and value-based methods.</p>
 <h3 id="actor">Actor</h3>
-<p>The Actor represents the policy $\pi(a|s)$, which is usually parameterized by a neural network. Given a state $s$, the network outputs a probability distribution over actions, or parameters of a distribution (for example, mean and standard deviation in the case of a Gaussian policy). The objective is to maximize the expected return:</p>
+<p>The Actor represents the policy <script type="math/tex">\pi(a|s)</script>, which is usually parameterized by a neural network. Given a state <script type="math/tex">s</script>, the network outputs a probability distribution over actions, or parameters of a distribution (for example, mean and standard deviation in the case of a Gaussian policy). The objective is to maximize the expected return:</p>
 <p>
 <script type="math/tex; mode=display">
 J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
 </script>
 </p>
-<p>where $R$ is the cumulative reward. The policy parameters $\theta$ are updated using gradient ascent based on the policy gradient:</p>
+<p>where <script type="math/tex">R</script> is the cumulative reward. The policy parameters <script type="math/tex">\theta</script> are updated using gradient ascent based on the policy gradient:</p>
 <p>
 <script type="math/tex; mode=display">
 \nabla_{\theta} J(\pi_{\theta}) = \mathbb{E}_{\pi_{\theta}}\left[ \nabla_{\theta} \log \pi_{\theta}(a|s) Q^{\pi}(s, a) \right]
 </script>
 </p>
-<p>with $Q^{\pi}(s, a)$ representing the action-value function.</p>
+<p>with <script type="math/tex">Q^{\pi}(s, a)</script> representing the action-value function.</p>
 <p>This is identical to the policy gradient method, using the value given out by the critic network as the advantage function.</p>
 <h3 id="critic">Critic</h3>
-<p>The Critic estimates the value function, which can be either the state-value function $V(s)$ or the action-value function $Q(s, a)$. Its main role is to provide feedback to the Actor regarding the quality of actions taken.</p>
+<p>The Critic estimates the value function, which can be either the state-value function <script type="math/tex">V(s)</script> or the action-value function <script type="math/tex">Q(s, a)</script>. Its main role is to provide feedback to the Actor regarding the quality of actions taken.</p>
 <p>The Critic minimizes the mean squared error,</p>
 <p>
 <script type="math/tex; mode=display">
@@ -126,12 +126,15 @@ J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
 </p>
 <p>where:</p>
 <ul>
-<li>$r$ is the immediate reward,</li>
-<li>$\gamma$ is the discount factor,</li>
-<li>$s'$ is the next state.</li>
+<li>
+<script type="math/tex">r</script> is the immediate reward,</li>
+<li>
+<script type="math/tex">\gamma</script> is the discount factor,</li>
+<li>
+<script type="math/tex">s'</script> is the next state.</li>
 </ul>
-<p>updating its parameters $\phi$ accordingly.</p>
-<p>Of course, if you use $Q(s, a)$, then the Critic model is identical to Q-learning. That is, instead of estimating the state-value function $V(s)$, the Critic estimates the action-value function directly. In this case, the Critic is trained to minimize the loss,</p>
+<p>updating its parameters <script type="math/tex">\phi</script> accordingly.</p>
+<p>Of course, if you use <script type="math/tex">Q(s, a)</script>, then the Critic model is identical to Q-learning. That is, instead of estimating the state-value function <script type="math/tex">V(s)</script>, the Critic estimates the action-value function directly. In this case, the Critic is trained to minimize the loss,</p>
 <p>
 <script type="math/tex; mode=display">
  L = (r + \gamma \max_{a'} Q(s', a'), - Q(s, a)) ^ 2
@@ -142,20 +145,20 @@ J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
 <ol>
 <li>
 <p><strong>Action Selection:</strong><br />
-   At time step $t$, given the current state $s_t$, the Actor selects an action $a_t$ according to its policy $\pi_{\theta}(a_t|s_t)$.</p>
+   At time step <script type="math/tex">t</script>, given the current state <script type="math/tex">s_t</script>, the Actor selects an action <script type="math/tex">a_t</script> according to its policy <script type="math/tex">\pi_{\theta}(a_t|s_t)</script>.</p>
 </li>
 <li>
 <p><strong>Environment Interaction:</strong><br />
-   The selected action $a_t$ is executed in the environment, which then returns a reward $r_t$ and the next state $s_{t+1}$.</p>
+   The selected action <script type="math/tex">a_t</script> is executed in the environment, which then returns a reward <script type="math/tex">r_t</script> and the next state <script type="math/tex">s_{t+1}</script>.</p>
 </li>
 <li>
 <p><strong>Critic Evaluation:</strong>  </p>
 </li>
 </ol>
-<p>The Critic evaluates the quality of the action by estimating the value function. This can be either the state-value $V(s_t)$ or the action-value $Q(s_t,a_t)$.</p>
+<p>The Critic evaluates the quality of the action by estimating the value function. This can be either the state-value <script type="math/tex">V(s_t)</script> or the action-value <script type="math/tex">Q(s_t,a_t)</script>.</p>
 <ul>
 <li>
-<p>If using $V(s)$, the Temporal Difference (TD) error (also known as GAE generalized advantage estimation) is computed as:</p>
+<p>If using <script type="math/tex">V(s)</script>, the Temporal Difference (TD) error (also known as GAE generalized advantage estimation) is computed as:</p>
 <p>
 <script type="math/tex; mode=display">
  \delta_t = r_t + \gamma V(s_{t+1}) - V(s_t).
@@ -163,7 +166,7 @@ J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
 </p>
 </li>
 <li>
-<p>If using $Q(s,a)$, a similar TD error (or Bellman error) is computed based on the Q-learning target:</p>
+<p>If using <script type="math/tex">Q(s,a)</script>, a similar TD error (or Bellman error) is computed based on the Q-learning target:</p>
 <p>
 <script type="math/tex; mode=display">
  \delta_t = r_t + \gamma \max_{a'} Q(s_{t+1}, a') - Q(s_t,a_t).
@@ -172,7 +175,7 @@ J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
 </li>
 <li>
 <p><strong>Critic Update:</strong><br />
-   The Critic’s parameters $\phi$ are updated to minimize the squared TD error:</p>
+   The Critic’s parameters <script type="math/tex">\phi</script> are updated to minimize the squared TD error:</p>
 </li>
 </ul>
 <p>
@@ -186,17 +189,17 @@ J(\pi) = \mathbb{E}_{\pi}\left[ R \right],
    \phi \leftarrow \phi - \beta \nabla_{\phi} \left( \delta_t^2 \right),
    </script>
 </p>
-<p>where $\beta$ is the learning rate for the Critic.</p>
+<p>where <script type="math/tex">\beta</script> is the learning rate for the Critic.</p>
 <ol>
 <li><strong>Actor Update:</strong><br />
-   The Actor is updated using the policy gradient method, with the advantage (previously, reward, but now, the value) serving as the weight. The update rule for the Actor’s parameters $\theta$ is:</li>
+   The Actor is updated using the policy gradient method, with the advantage (previously, reward, but now, the value) serving as the weight. The update rule for the Actor’s parameters <script type="math/tex">\theta</script> is:</li>
 </ol>
 <p>
 <script type="math/tex; mode=display">
    \theta \leftarrow \theta + \alpha \, \delta_t \nabla_{\theta} \log \pi_{\theta}(a_t|s_t),
    </script>
 </p>
-<p>where $\alpha$ is the Actor’s learning rate. This update increases the probability of actions that yield a positive advantage (i.e., better-than-expected outcomes) and decreases it for actions with a negative advantage.</p>
+<p>where <script type="math/tex">\alpha</script> is the Actor’s learning rate. This update increases the probability of actions that yield a positive advantage (i.e., better-than-expected outcomes) and decreases it for actions with a negative advantage.</p>
 <h2 id="implementation">Implementation</h2>
 <p>Using actor-critic algorithm leads to faster convergence. However, the task is still too complicated with gravity.</p>
 <pre><code class="language-python">import gymnasium as gym
