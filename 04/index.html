@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://finger-bone.github.io/rl-crashcourse/04/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>RL Ch4 PPO - Reinforcement Learning Crashcourse</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/color-brewer.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Reinforcement Learning Crashcourse</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../notes/01.md" class="nav-link">Q Learning and DQN</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/02.md" class="nav-link">Policy Gradient</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/03.md" class="nav-link">Actor-Critic</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/04.md" class="nav-link">PPO</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/05.md" class="nav-link">GRPO</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#rl-ch4-ppo" class="nav-link">RL Ch4 PPO</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#ppo" class="nav-link">PPO</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#entropy-regulation" class="nav-link">Entropy Regulation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#implementation" class="nav-link">Implementation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="rl-ch4-ppo">RL Ch4 PPO</h1>
+<h2 id="ppo">PPO</h2>
+<p>Actor-Critic improves the performance of a policy network, and there are more ways to do so. Another improvement based on Actor-Critic is PPO (Proximal Policy Optimization).</p>
+<p>PPO is designed to optimize the policy more efficiently by introducing a constraint to ensure that each policy update does not change the policy too drastically. This is done by clipping the objective function to prevent large, unstable updates, while still allowing for enough flexibility for effective learning.</p>
+<h3 id="a-recapitulation">A Recapitulation</h3>
+<p>We would use the following loss for a typical policy network.</p>
+<p>$$
+L = -\mathbb{E}(\log(\pi_\theta(a_t|s_t)) A)
+$$</p>
+<p>Where $A$ is the advantage. In the vanilla policy gradient, this equals the reward, and in the actor-critic architecture, it is the value given out by the critic network.</p>
+<p>PPO differentiates from this method by introducing a <strong>clipped objective</strong> that prevents excessively large policy updates. The idea is to ensure the new policy doesn't deviate too far from the old policy, even if the objective function suggests a large update.</p>
+<h3 id="the-clipped-surrogate-objective">The Clipped Surrogate Objective</h3>
+<p>The key modification in PPO is the use of a clipped surrogate objective to prevent large updates. The clipped objective is defined as:</p>
+<p>$$
+L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right) \right]
+$$</p>
+<p>Where:
+- $r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}$ is the probability ratio between the new policy and the old policy.
+- $\hat{A}_t$ is the advantage estimate at time step $t$.
+- $\epsilon$ is a hyperparameter that defines the clipping range (usually small, such as 0.1 or 0.2).
+- $\text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon)$ is the clipped ratio that limits how much the probability ratio can change.</p>
+<p>This modification ensures that if the new policy makes a drastic change, the objective function will be "penalized" by the clipping, discouraging large updates. On the other hand, if the change is small (i.e., the ratio $r_t(\theta)$ is within the clipping bounds), the objective behaves as a standard policy gradient loss.</p>
+<h3 id="how-to-obtain-r_ttheta">How to Obtain $r_t(\theta)$ ?</h3>
+<p>A engineering issue here is that how to get the old distribution. We only need to firstly, run multiple inferences in a batch without gradient, then for each entry in the batch, update the model. For the first entry, the $r_t(\theta)$ would stay as one, but for the later ones, it's value is correct.</p>
+<h2 id="entropy-regulation">Entropy Regulation</h2>
+<p>A common trick for policy gradient learning is to increase the loss by $\alpha H$. Where $\alpha$ ia a small number, typically $0.01$. And $H$ is the entropy. The entropy term measures the randomness or uncertainty of the policy. A higher entropy means the policy is more stochastic, encouraging the agent to explore a wider range of actions. On the other hand, a lower entropy indicates a more deterministic policy.</p>
+<p>The entropy term is defined as:</p>
+<p>$$
+H(\pi) = -\mathbb{E}(\pi log(\pi))
+$$</p>
+<p>This term quantifies how uncertain the policy is about which action to choose in a given state. In reinforcement learning, encouraging exploration by increasing entropy can prevent the agent from converging to suboptimal deterministic policies too early, ensuring that it continues to explore different actions to discover better strategies.</p>
+<h2 id="implementation">Implementation</h2>
+<p>PPO yields excellent stability and convergence, so we enable the gravity for this model.</p>
+<pre><code class="language-python">import gymnasium as gym
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+from torch.distributions import Normal
+import wandb
+from tqdm import trange
+
+device = &quot;cpu&quot;
+print(f&quot;Using device: {device}&quot;)
+
+class ActorNetwork(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(ActorNetwork, self).__init__()
+        self.fc1 = nn.Linear(state_dim, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.mean_layer = nn.Linear(128, action_dim)
+        self.logstd_layer = nn.Linear(128, action_dim)
+        self.apply(self.init_weights)
+
+    @staticmethod
+    def init_weights(m):
+        if isinstance(m, nn.Linear):
+            nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+            nn.init.constant_(m.bias, 0.0)
+
+    def forward(self, state):
+        x = torch.relu(self.fc1(state))
+        x = torch.relu(self.fc2(x))
+        mean = self.mean_layer(x)
+        logstd = self.logstd_layer(x)
+        logstd = torch.clamp(logstd, min=-20, max=2)
+        return mean, logstd
+
+class CriticNetwork(nn.Module):
+    def __init__(self, state_dim):
+        super(CriticNetwork, self).__init__()
+        self.fc1 = nn.Linear(state_dim, 128)
+        self.fc2 = nn.Linear(128, 128)
+        self.value_layer = nn.Linear(128, 1)
+        self.apply(self.init_weights)
+
+    @staticmethod
+    def init_weights(m):
+        if isinstance(m, nn.Linear):
+            nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+            nn.init.constant_(m.bias, 0.0)
+
+    def forward(self, state):
+        x = torch.relu(self.fc1(state))
+        x = torch.relu(self.fc2(x))
+        value = self.value_layer(x)
+        return value
+
+class PPOTrainer:
+    def __init__(self, env, actor_model, critic_model, actor_optimizer, critic_optimizer,
+                 gamma=0.99, gae_lambda=0.95, clip_param=0.2, n_epochs=4, batch_size=64):
+        self.env = env
+        self.actor_model = actor_model
+        self.critic_model = critic_model
+        self.actor_optimizer = actor_optimizer
+        self.critic_optimizer = critic_optimizer
+        self.gamma = gamma
+        self.gae_lambda = gae_lambda
+        self.clip_param = clip_param
+        self.n_epochs = n_epochs
+        self.batch_size = batch_size
+        self.episode_rewards = []
+
+    def compute_gae(self, rewards, values, dones, next_value):
+        values = values + [next_value]
+        advantages = []
+        gae = 0
+        for t in reversed(range(len(rewards))):
+            delta = rewards[t] + self.gamma * values[t+1] * (1 - dones[t]) - values[t]
+            gae = delta + self.gamma * self.gae_lambda * (1 - dones[t]) * gae
+            advantages.insert(0, gae)
+        return torch.tensor(advantages, dtype=torch.float32).to(device)
+
+    def train(self, num_updates=1000, n_steps=2048):
+        for update in trange(num_updates):
+            states, actions, rewards, dones, old_log_probs, values = [], [], [], [], [], []
+            state, _ = self.env.reset()
+            state = torch.FloatTensor(state).to(device)
+            episode_reward = 0
+
+            for _ in range(n_steps):
+                with torch.no_grad():
+                    mean, logstd = self.actor_model(state)
+                    std = torch.exp(logstd)
+                    dist = Normal(mean, std)
+                    action = dist.sample()
+                    log_prob = dist.log_prob(action).sum()
+                    value = self.critic_model(state).squeeze()
+
+                next_state, reward, done, truncated, _ = self.env.step(action.cpu().numpy())
+                episode_reward += reward
+
+                states.append(state)
+                actions.append(action)
+                rewards.append(reward)
+                dones.append(done or truncated)
+                old_log_probs.append(log_prob)
+                values.append(value)
+
+                state = torch.FloatTensor(next_state).to(device) if not (done or truncated) else torch.FloatTensor(self.env.reset()[0]).to(device)
+
+                if done or truncated:
+                    self.episode_rewards.append(episode_reward)
+                    episode_reward = 0
+
+            with torch.no_grad():
+                next_value = self.critic_model(state).squeeze().item()
+
+            states = torch.stack(states)
+            actions = torch.stack(actions)
+            old_log_probs = torch.stack(old_log_probs)
+            values = torch.stack(values).cpu().numpy()
+
+            advantages = self.compute_gae(rewards, values.tolist(), dones, next_value)
+            returns = advantages + torch.tensor(values, dtype=torch.float32).to(device)
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+            dataset = torch.utils.data.TensorDataset(states, actions, old_log_probs, returns, advantages)
+            dataloader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+
+            for _ in range(self.n_epochs):
+                for batch in dataloader:
+                    b_states, b_actions, b_old_log_probs, b_returns, b_advantages = batch
+
+                    mean, logstd = self.actor_model(b_states)
+                    std = torch.exp(logstd)
+                    dist = Normal(mean, std)
+                    new_log_probs = dist.log_prob(b_actions).sum(dim=1)
+                    entropy = dist.entropy().mean()
+
+                    ratio = torch.exp(new_log_probs - b_old_log_probs)
+                    surr1 = ratio * b_advantages
+                    surr2 = torch.clamp(ratio, 1.0 - self.clip_param, 1.0 + self.clip_param) * b_advantages
+                    actor_loss = -torch.min(surr1, surr2).mean() - 0.01 * entropy
+
+                    current_values = self.critic_model(b_states).squeeze()
+                    critic_loss = nn.MSELoss()(current_values, b_returns)
+
+                    self.actor_optimizer.zero_grad()
+                    actor_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.actor_model.parameters(), 0.5)
+                    self.actor_optimizer.step()
+
+                    self.critic_optimizer.zero_grad()
+                    critic_loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.critic_model.parameters(), 0.5)
+                    self.critic_optimizer.step()
+
+            if len(self.episode_rewards) &gt; 0:
+                avg_reward = np.mean(self.episode_rewards[-10:])
+                wandb.log({
+                    &quot;update&quot;: update,
+                    &quot;avg_reward&quot;: avg_reward,
+                    &quot;actor_loss&quot;: actor_loss.item(),
+                    &quot;critic_loss&quot;: critic_loss.item(),
+                    &quot;entropy&quot;: entropy.item()
+                })
+                if update % 10 == 0:
+                    print(f&quot;Update {update}, Avg Reward: {avg_reward:.1f}&quot;)
+
+def main():
+    wandb.init(project=&quot;rl&quot;)
+    env = gym.make(&quot;Pendulum-v1&quot;)
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.shape[0]
+
+    actor_model = ActorNetwork(state_dim, action_dim).to(device)
+    critic_model = CriticNetwork(state_dim).to(device)
+
+    actor_optimizer = optim.Adam(actor_model.parameters(), lr=3e-4)
+    critic_optimizer = optim.Adam(critic_model.parameters(), lr=3e-4)
+
+    trainer = PPOTrainer(
+        env=env,
+        actor_model=actor_model,
+        critic_model=critic_model,
+        actor_optimizer=actor_optimizer,
+        critic_optimizer=critic_optimizer,
+        gamma=0.99,
+        gae_lambda=0.95,
+        clip_param=0.2,
+        n_epochs=4,
+        batch_size=64
+    )
+    trainer.train(num_updates=500, n_steps=2048)
+
+    torch.save(actor_model.state_dict(), &quot;ppo_actor.pth&quot;)
+    torch.save(critic_model.state_dict(), &quot;ppo_critic.pth&quot;)
+    test(actor_model)
+
+def test(actor_model):
+    env = gym.make(&quot;Pendulum-v1&quot;, render_mode=&quot;human&quot;)
+    state, _ = env.reset()
+    total_reward = 0
+    while True:
+        with torch.no_grad():
+            state_tensor = torch.FloatTensor(state).to(device)
+            mean, logstd = actor_model(state_tensor)
+            action = torch.clamp(Normal(mean, torch.exp(logstd)).sample(), min=-2, max=2)
+        next_state, reward, done, _, _ = env.step(action.cpu().numpy())
+        total_reward += reward
+        state = next_state
+        if done:
+            break
+    print(f&quot;Test Reward: {total_reward:.1f}&quot;)
+    env.close()
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/jquery-3.6.0.min.js"></script>
+        <script src="../js/bootstrap.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

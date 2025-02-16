@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://finger-bone.github.io/rl-crashcourse/02/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>RL Ch2 Policy Gradient - Reinforcement Learning Crashcourse</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/color-brewer.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Reinforcement Learning Crashcourse</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../notes/01.md" class="nav-link">Q Learning and DQN</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/02.md" class="nav-link">Policy Gradient</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/03.md" class="nav-link">Actor-Critic</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/04.md" class="nav-link">PPO</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/05.md" class="nav-link">GRPO</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#rl-ch2-policy-gradient" class="nav-link">RL Ch2 Policy Gradient</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#policy-gradient" class="nav-link">Policy Gradient</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#implementation" class="nav-link">Implementation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="rl-ch2-policy-gradient">RL Ch2 Policy Gradient</h1>
+<h2 id="policy-gradient">Policy Gradient</h2>
+<p>Q-learning is simple but has its limitations. The major one being that, it only allows for discrete actions. For environments like <code>MountainCarContinuous-v0</code>, it takes continuous acceleration value from negative one to positive one, and thus disallowing Q-learning.</p>
+<p>Policy gradient algorithm is still model-free, online-learning, and trial-and-error based, but it allows for continuous actions.</p>
+<p>Our model should give our a distribution of all the actions. That is, for continuous case, giving out the mean and variance for each input (assume we ust gaussian distribution), and for discreet case, giving out a softmax-ed vector.</p>
+<p>The major equation is the loss function:</p>
+<p>$$
+L(\theta) = -\mathbb{E} \big[ \log \pi_\theta(a|s) \cdot A \big]
+$$</p>
+<p>Here:
+- $\pi_\theta(a|s)$: The policy, which gives the probability of taking action $a$ in state $s$.
+- $A$: The advantage value. For now, it can equal to the cumulative reward for the given action.
+- The negative sign ensures we maximize rewards (since optimization minimizes the loss).
+- $\mathbb{E}$ is done over all actions in an episode.</p>
+<h3 id="steps-for-policy-gradient-algorithm">Steps for Policy Gradient Algorithm:</h3>
+<ol>
+<li><strong>Initialize the Policy Network</strong>: </li>
+<li>For continuous actions, the network outputs parameters of a continuous distribution, usually gaussian, and thus, mean and variance. If there are multiple continuous inputs, then generate multiple distributions.</li>
+<li>
+<p>For discrete actions, it outputs a probability distribution via softmax (a vector with the possibility of each action).</p>
+</li>
+<li>
+<p><strong>Sample Trajectories</strong>:</p>
+</li>
+<li>Use the current policy to interact with the environment.</li>
+<li>
+<p>Collect states, actions, rewards, and log probabilities of chosen actions.</p>
+</li>
+<li>
+<p><strong>Compute Discounted Rewards</strong>:</p>
+</li>
+<li>For each step $t$, compute the discounted return:
+     $$
+     R_t = \sum_{k=t}^T \gamma^{k-t} r_k
+     $$</li>
+<li>
+<p>Here, $\gamma$ is the discount factor, and $T$ is the episode length.</p>
+</li>
+<li>
+<p><strong>Calculate the Loss</strong>:</p>
+</li>
+<li>Use the loss function:
+     $$
+     L(\theta) = -\frac{1}{N} \sum_{t=1}^N \log \pi_\theta(a_t | s_t) \cdot R_t
+     $$</li>
+<li>
+<p>This adjusts the policy to favor actions that lead to higher rewards.</p>
+</li>
+<li>
+<p><strong>Update the Policy</strong>:</p>
+</li>
+<li>Perform gradient descent on the loss $L(\theta)$ to update the policy parameters $\theta$.</li>
+</ol>
+<h2 id="implementation">Implementation</h2>
+<p>Please note that typically, policy gradient has worse performance under such a raw implementation. A better way would be to sample action space into discreet value then, use Q-learning. But policy gradient is the basis of many other methods, and so we still need to learn it.</p>
+<p>Here, a case with gravity is too complex for the model to handle, so we disabled the gravity, under which it yields acceptable result.</p>
+<pre><code class="language-python">import gymnasium as gym
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+from torch.distributions import Normal
+import wandb
+from tqdm import trange
+
+device = &quot;cpu&quot;
+print(f&quot;Using device: {device}&quot;)
+
+class PolicyNetwork(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(PolicyNetwork, self).__init__()
+        self.fc1 = nn.Linear(state_dim, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.mean_layer = nn.Linear(64, action_dim)
+        self.logstd_layer = nn.Linear(64, action_dim)
+        self.apply(self.init_weights)
+
+    @staticmethod
+    def init_weights(m):
+        if isinstance(m, nn.Linear):
+            nn.init.orthogonal_(m.weight, gain=np.sqrt(2))
+            nn.init.constant_(m.bias, 0.0)
+
+    def forward(self, state):
+        x = torch.relu(self.fc1(state))
+        x = torch.relu(self.fc2(x) + x)
+        mean = self.mean_layer(x)
+        logstd = self.logstd_layer(x)
+        return mean, logstd
+
+class PolicyGradientTrainer:
+    def __init__(self, env, model, optimizer, gamma=0.99):
+        self.env = env
+        self.model = model
+        self.optimizer = optimizer
+        self.gamma = gamma
+        self.episode_rewards = []
+
+    def compute_returns(self, rewards):
+        discounted_rewards = []
+        running_return = 0
+        for r in reversed(rewards):
+            running_return = r + self.gamma * running_return
+            discounted_rewards.insert(0, running_return)
+        return torch.tensor(discounted_rewards, dtype=torch.float32).to(device)
+
+    def train(self, num_episodes=3000):
+        epsilon = 0.9
+        epsilon_decay = 0.99
+        min_epsilon = 0.001
+        for episode in trange(num_episodes):
+            state, _ = self.env.reset()
+            state = torch.FloatTensor(state).to(device)
+            done = False
+            truncated = False
+            rewards = []
+            log_probs = []
+            cnt = 0
+            while not done and cnt &lt; 200:
+                cnt += 1
+                mean, logstd = self.model(state)
+                std = torch.exp(logstd)
+                dist = Normal(mean, std)
+                action = dist.sample()
+                log_prob = dist.log_prob(action).sum()
+                action_clamped = torch.clamp(action, min=-2, max=2)
+                next_state, reward, done, truncated, _ = self.env.step(action_clamped.cpu().numpy())
+                rewards.append(reward)
+                log_probs.append(log_prob)
+                state = torch.FloatTensor(next_state).to(device)
+            if np.random.random() &lt; epsilon:
+                action = torch.FloatTensor(self.env.action_space.sample()).to(device)
+            if len(rewards) == 0:
+                continue
+
+            returns = self.compute_returns(rewards)
+            returns = (returns - returns.mean()) / (returns.std() + 1e-5)
+
+            log_probs = torch.stack(log_probs)
+            loss = -1e4 * torch.mean(log_probs * returns)
+
+            self.optimizer.zero_grad()
+            loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+
+            self.optimizer.step()
+
+            total_reward = sum(rewards)
+            self.episode_rewards.append(total_reward)
+            wandb.log({
+                &quot;episode&quot;: episode,
+                &quot;reward&quot;: total_reward,
+                &quot;loss&quot;: loss.item(),
+                &quot;mean_std&quot;: std.mean().item()
+            })
+
+            if episode % 100 == 0:
+                print(f&quot;Episode {episode}, Reward: {total_reward:.1f}, Loss: {loss.item():.4f}, Mean Std: {std.mean().item():.4f}&quot;)
+            epsilon = max(epsilon * epsilon_decay, min_epsilon)
+
+def main():
+    wandb.init(project=&quot;rl&quot;)
+    env = gym.make(&quot;Pendulum-v1&quot;, g=0)
+    model = PolicyNetwork(env.observation_space.shape[0], env.action_space.shape[0]).to(device)
+    optimizer = optim.SGD(model.parameters(), lr=5e-3)
+
+    trainer = PolicyGradientTrainer(env, model, optimizer, gamma=0.99)
+    trainer.train()
+
+    torch.save(model.state_dict(), &quot;policy_model.pth&quot;)
+    test(model)
+
+def test(model):
+    env = gym.make(&quot;Pendulum-v1&quot;, g=0, render_mode=&quot;human&quot;)
+    state, _ = env.reset()
+    total_reward = 0
+
+    while True:
+        with torch.no_grad():
+            state_tensor = torch.FloatTensor(state).to(device)
+            mean, logstd = model(state_tensor)
+            action = torch.clamp(Normal(mean, torch.exp(logstd)).sample(), min=-2, max=2)
+            next_state, reward, done, _, _ = env.step(action.cpu().numpy())
+            total_reward += reward
+            state = next_state
+            if done:
+                break
+    print(f&quot;Test Reward: {total_reward:.1f}&quot;)
+    env.close()
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/jquery-3.6.0.min.js"></script>
+        <script src="../js/bootstrap.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

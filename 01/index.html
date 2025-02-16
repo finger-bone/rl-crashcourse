@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://finger-bone.github.io/rl-crashcourse/01/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>RL Ch1 QLearning - Reinforcement Learning Crashcourse</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/color-brewer.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Reinforcement Learning Crashcourse</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../notes/01.md" class="nav-link">Q Learning and DQN</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/02.md" class="nav-link">Policy Gradient</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/03.md" class="nav-link">Actor-Critic</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/04.md" class="nav-link">PPO</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/05.md" class="nav-link">GRPO</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#rl-ch1-qlearning" class="nav-link">RL Ch1 QLearning</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#rl-and-its-components" class="nav-link">RL and Its Components</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#gymnasium" class="nav-link">Gymnasium</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#q-learning" class="nav-link">Q-Learning</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#implementation" class="nav-link">Implementation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="rl-ch1-qlearning">RL Ch1 QLearning</h1>
+<h2 id="rl-and-its-components">RL and Its Components</h2>
+<p>RL is a online-learning system based on trial and error. RL process can be analogized as a game, where the player (agent) interacts with the environment to achieve a goal. The agent can take actions and receive rewards from the environment. The agent's goal is to maximize the total reward it receives over time.</p>
+<p>RL can be used on both traditional ML algorithms and NN based methods. This series of notes only focus on the latter.</p>
+<p>We usually call each round of a game an episode.</p>
+<h2 id="gymnasium">Gymnasium</h2>
+<p>A popular library for RL is OpenAI's Gymnasium. It provides a wide range of environments for testing RL algorithms. The environments are categorized into different levels of difficulty.</p>
+<p>You can simply install <code>gymnasium[box2d] swig</code> to get started, we would also need <code>pytorch</code>.</p>
+<p>To create a game (an environment) in Gymnasium, you can use the following code:</p>
+<pre><code class="language-python">import gym
+
+env = gym.make('CartPole-v0')
+</code></pre>
+<p>There is an option, <code>render_mode</code>, that can be set to <code>human</code> to visualize the game. We usually only use the mode <code>human</code> to visualize the game, and let it stay unrendered (<code>None</code>) in other cases.</p>
+<p>Useful methods for the environment object include:</p>
+<ul>
+<li><code>observation, info = env.reset()</code> reset the environment and return the initial observation (a state tensor).</li>
+<li><code>observation, reward, terminated, truncated, info = env.step(action)</code> take an action and return the observation, reward (a scaler), whether the games failed (terminated), whether the game is truncated (run out of time), and some additional information.</li>
+<li><code>env.action_space.shape</code> check the accepted shape of the action tensor.</li>
+<li><code>action = env.action_space.sample()</code> generate a random action.</li>
+<li><code>env.observation_space</code> has the same methods mentioned above for action space.</li>
+</ul>
+<h2 id="q-learning">Q-Learning</h2>
+<p>The first RL algorithm we will discuss is Q-Learning. Q-Learning is a model-free, off-policy algorithm that can be used to find the optimal action-selection policy for any given MDP. The Q-Learning algorithm is based on the Bellman equation, which is used to calculate the Q-value of a state-action pair.</p>
+<p>Q-Learning was originally proposed by Chris Watkins in 1989, applied to traditional ML algorithms. However, we use NN instead here.</p>
+<p>Q-Learning aims to give every action a Q-value, which represents the expected total reward the agent will receive if it takes that action in a given state. The agent then selects the action with the highest Q-value, known as the greedy exploitation. However, during training, this typically prohibits the model to choose other options, so the stratagem used during training is usually randomized-greedy. That is, having a small chance of randomly choosing an action, or most of the time, choose the action greedily.</p>
+<p>The Q-Learning algorithm is based on the following equation:</p>
+<p>$$Q_{next}(s, a) = Q(s, a) + \alpha \cdot (r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a))$$</p>
+<p>where:</p>
+<ul>
+<li>$Q(s, a)$ is the Q-value of the state-action pair $(s, a)$.</li>
+<li>$\alpha$ is the learning rate.</li>
+<li>$r$ is the reward received after taking action $a$ in state $s$.</li>
+<li>$\gamma$ is the discount factor.</li>
+<li>$s'$ is the next state.</li>
+<li>$a'$ is the next action.</li>
+</ul>
+<p>This equation means that, the expected Q-value for the current $a, s$ pair is expected to be $r + \gamma \cdot \max_{a'} Q(s', a')$, which means is the current reward plus the most optimal Q-value of the future with a decay of $gamma$.</p>
+<p>This is for the more traditional ML method. For the NN method, we use the following loss function:</p>
+<p>$$L = \left( r + \gamma \cdot \max_{a'} Q(s', a') - Q(s, a) \right)^2$$</p>
+<p>Obviously this is just a rewritten form for the previous equation, when we assume the output of the model is a Q-value tensor, because if we take gradient for that loss, the update step becomes the same as the previous equation.</p>
+<p>$a'$ can be approximated by the current model. That is, what the current model would do under the given state $s'$.</p>
+<h2 id="implementation">Implementation</h2>
+<p>DQN means Deep Q-learning Network. It is a NN based Q-learning algorithm. We will implement it here.</p>
+<p>This is just a simple MLP model. You can use any other architecture you like. The training process is identical to previous equations, except that the <code>max</code> function is replaced by an approximation of the current model (as the reference model).</p>
+<p>The loss curve may bounce up and down for RL, but you can witness a steady increase in the reward, which is more important.</p>
+<p>For this scenario, the Q-Learning method yields an acceptable result.s</p>
+<pre><code class="language-python">import gymnasium as gym
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import random
+from torch.optim.lr_scheduler import CosineAnnealingLR
+import wandb
+from tqdm import trange
+import os
+
+wandb.init(project=&quot;rl&quot;)
+device = &quot;cpu&quot;
+print(f&quot;Using device: {device}&quot;)
+
+class QNetwork(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super(QNetwork, self).__init__()
+        self.fc1 = nn.Linear(state_dim, 128)  
+        self.fc2 = nn.Linear(128, 128) 
+        self.fc3 = nn.Linear(128, action_dim)
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
+num_episodes = 1000
+learning_rate = 3e-4
+gamma = 0.99
+epsilon = 1.0  
+epsilon_decay = 0.99 
+min_epsilon = 0.05
+
+env = gym.make(&quot;CartPole-v1&quot;)
+state_dim = env.observation_space.shape[0]
+action_dim = env.action_space.n 
+
+q_network = QNetwork(state_dim, action_dim).to(device)
+if os.path.exists(&quot;q_network.pth&quot;):
+    q_network.load_state_dict(torch.load(&quot;q_network.pth&quot;))
+optimizer = optim.Adam(q_network.parameters(), lr=learning_rate)
+scheduler = CosineAnnealingLR(optimizer, num_episodes)
+loss_fn = nn.MSELoss()
+
+for episode in trange(num_episodes):
+    state, _ = env.reset() 
+    state = torch.FloatTensor(state).to(device) 
+    episode_reward = 0 
+    done = False
+
+    while not done:
+        if random.random() &lt; epsilon:
+            action = env.action_space.sample()
+        else:
+            with torch.no_grad():
+                q_values = q_network(state)
+            action = torch.argmax(q_values).item()
+        next_state, reward, done, _, _ = env.step(action)
+        next_state_tensor = torch.FloatTensor(next_state).to(device) 
+        episode_reward += reward
+
+        with torch.no_grad():
+            q_next = q_network(next_state_tensor)
+            max_q_next = torch.max(q_next).item()
+            target_q = reward + (gamma * max_q_next if not done else 0.0)
+
+        q_values = q_network(state)
+        current_q = q_values[action]
+
+        loss = loss_fn(current_q, torch.tensor(target_q).to(device)) 
+        wandb.log({&quot;loss&quot;: loss.item(), &quot;episode&quot;: episode, &quot;lr&quot;: scheduler.get_last_lr()[0], &quot;epsilon&quot;: epsilon, &quot;reward&quot;: episode_reward})
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        state = next_state_tensor
+    scheduler.step()
+    epsilon = max(min_epsilon, epsilon * epsilon_decay)
+
+env.close()
+
+q_network.eval()
+torch.save(q_network.state_dict(), &quot;q_network.pth&quot;)
+test_env = gym.make(&quot;CartPole-v1&quot;, render_mode=&quot;human&quot;)
+state, _ = test_env.reset()
+done = False
+
+while not done:
+    test_env.render()
+    state_tensor = torch.FloatTensor(state).to(device)
+    with torch.no_grad():
+        q_values = q_network(state_tensor)
+    action = torch.argmax(q_values).item()
+    state, reward, done, _, _ = test_env.step(action)
+
+test_env.close()
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/jquery-3.6.0.min.js"></script>
+        <script src="../js/bootstrap.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>

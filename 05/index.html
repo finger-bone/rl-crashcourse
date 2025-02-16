@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        
+        
+        <link rel="canonical" href="https://finger-bone.github.io/rl-crashcourse/05/">
+        <link rel="shortcut icon" href="../img/favicon.ico">
+        <title>RL Ch5 GRPO - Reinforcement Learning Crashcourse</title>
+        <link href="../css/bootstrap.min.css" rel="stylesheet">
+        <link href="../css/font-awesome.min.css" rel="stylesheet">
+        <link href="../css/base.css" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/color-brewer.min.css">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <script>hljs.highlightAll();</script> 
+    </head>
+
+    <body>
+        <div class="navbar fixed-top navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" href="..">Reinforcement Learning Crashcourse</a>
+                <!-- Expander button -->
+                <button type="button" class="navbar-toggler" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Expanded navigation -->
+                <div id="navbar-collapse" class="navbar-collapse collapse">
+                        <!-- Main navigation -->
+                        <ul class="nav navbar-nav">
+                            <li class="navitem">
+                                <a href="../notes/01.md" class="nav-link">Q Learning and DQN</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/02.md" class="nav-link">Policy Gradient</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/03.md" class="nav-link">Actor-Critic</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/04.md" class="nav-link">PPO</a>
+                            </li>
+                            <li class="navitem">
+                                <a href="../notes/05.md" class="nav-link">GRPO</a>
+                            </li>
+                        </ul>
+
+                    <ul class="nav navbar-nav ml-auto">
+                        <li class="nav-item">
+                            <a href="#" class="nav-link" data-toggle="modal" data-target="#mkdocs_search_modal">
+                                <i class="fa fa-search"></i> Search
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="container">
+            <div class="row">
+                    <div class="col-md-3"><div class="navbar-light navbar-expand-md bs-sidebar hidden-print affix" role="complementary">
+    <div class="navbar-header">
+        <button type="button" class="navbar-toggler collapsed" data-toggle="collapse" data-target="#toc-collapse" title="Table of Contents">
+            <span class="fa fa-angle-down"></span>
+        </button>
+    </div>
+
+    
+    <div id="toc-collapse" class="navbar-collapse collapse card bg-secondary">
+        <ul class="nav flex-column">
+            
+            <li class="nav-item" data-level="1"><a href="#rl-ch5-grpo" class="nav-link">RL Ch5 GRPO</a>
+              <ul class="nav flex-column">
+            <li class="nav-item" data-level="2"><a href="#introduction-to-grpo" class="nav-link">Introduction to GRPO</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#core-concept-of-grpo" class="nav-link">Core Concept of GRPO</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#objective-function-of-grpo" class="nav-link">Objective Function of GRPO</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#advantages-of-grpo" class="nav-link">Advantages of GRPO</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-level="2"><a href="#implementation" class="nav-link">Implementation</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+              </ul>
+            </li>
+        </ul>
+    </div>
+</div></div>
+                    <div class="col-md-9" role="main">
+
+<h1 id="rl-ch5-grpo">RL Ch5 GRPO</h1>
+<h2 id="introduction-to-grpo">Introduction to GRPO</h2>
+<p>GRPO (Group Relative Policy Optimization) is a novel reinforcement learning method proposed by DeepSeek, specifically designed for large language model (LLM) reinforcement learning. It builds upon the ideas of PPO (Proximal Policy Optimization) but eliminates the need for a critic model, simplifying the overall architecture.</p>
+<h2 id="core-concept-of-grpo">Core Concept of GRPO</h2>
+<p>The core idea of GRPO is to optimize the policy by comparing the outputs of the new policy with a group of outputs from the old policy. This "group relative" comparison ensures that the updates are more stable and reliable. Instead of relying on a value function to estimate the advantage, GRPO uses relative rewards computed from multiple samples.</p>
+<h2 id="objective-function-of-grpo">Objective Function of GRPO</h2>
+<p>The objective function of GRPO can be formulated as:</p>
+<p>$$
+L^{GRPO}(\theta) = \mathbb{E}\left[
+\sum_{i = 1}^{G}\left(\min \left(\frac{\pi_{\theta}\left(o_{i}\right)}{\pi_{\theta_{\text{old}}}\left(o_{i}\right)} A_{i},
+\text{clip}\left(\frac{\pi_{\theta}\left(o_{i}\right)}{\pi_{\theta_{\text{old}}}\left(o_{i}\right)}, 1-\varepsilon, 1+\varepsilon\right) A_{i}\right)\right) - \beta \mathbb{D}<em>{KL}\left(\pi</em>{\theta} | \pi_{\text{ref}}\right)
+\right]
+$$</p>
+<p>Where:
+- $A_{i} = \frac{r_{i} - \mathrm{mean}({r_1, r_2, \cdots, r_G})}{\mathrm{std}({r_1, r_2, \cdots, r_G})}$ is the normalized advantage computed from a group of samples. Please note that, in GRPO, we use this group-normalized reward instead of GAE. The latter requires a critic model, which we do not have in GRPO.
+- $\pi_{\theta}$ and $\pi_{\theta_{\text{old}}}$ are the new and old policies, respectively.
+- $\varepsilon$ is a hyperparameter that controls the range of policy updates.
+- $\beta$ is a regularization parameter that controls the KL divergence between the new policy and a reference policy $\pi_{\text{ref}}$. This functions the same as the entropy regulation trick we talked about in the last chapter, it is just that GRPO uses KL divergence instead of simple entropy (KL divergence is just entropy difference).</p>
+<h2 id="advantages-of-grpo">Advantages of GRPO</h2>
+<ol>
+<li><strong>No Critic Network Required</strong>: By eliminating the need for a critic network, GRPO simplifies the model architecture and reduces computational overhead.</li>
+<li><strong>Stable Updates</strong>: The clipping mechanism ensures that policy updates are stable and prevent large, potentially destabilizing changes.</li>
+<li><strong>Robustness to Noisy Rewards</strong>: GRPO is more robust to noisy reward signals, making it suitable for complex tasks where reward estimation can be challenging.</li>
+</ol>
+<h2 id="implementation">Implementation</h2>
+<p>GRPO does not behave as well as PPO, so we use a simpler scenario. At the same time, this also demonstrates how to use policy gradient on discreet action spaces.</p>
+<pre><code class="language-python">import gymnasium as gym
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import numpy as np
+from torch.distributions import Categorical
+import wandb
+from tqdm import trange
+
+device = &quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;
+print(f&quot;Using device: {device}&quot;)
+
+class ActorNetwork(nn.Module):
+    def __init__(self, state_dim, action_dim):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(state_dim, 64),
+            nn.Tanh(),
+            nn.Linear(64, 64),
+            nn.Tanh(),
+            nn.Linear(64, action_dim)
+        )
+        self.apply(self._init_weights)
+
+    def _init_weights(self, m):
+        if isinstance(m, nn.Linear):
+            nn.init.orthogonal_(m.weight, gain=1.0)
+            nn.init.constant_(m.bias, 0.0)
+
+    def forward(self, x):
+        return self.net(x)
+
+class GRPOTrainer:
+    def __init__(self, env, actor, optimizer, 
+                 clip_ratio=0.2, beta=0.001, gamma=0.99,
+                 epochs=10, batch_size=32, 
+                 group_size=200):
+        self.env = env
+        self.actor = actor
+        self.optimizer = optimizer
+        self.clip_ratio = clip_ratio
+        self.beta = beta
+        self.gamma = gamma
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.group_size = group_size
+        self.ep_rewards = []
+
+    def _calc_returns(self, rewards, dones):
+        returns = []
+        R = 0
+        for r, done in zip(reversed(rewards), reversed(dones)):
+            R = r + self.gamma * R * (1 - done)
+            returns.insert(0, R)
+        return torch.tensor(returns, dtype=torch.float32).to(device)
+
+    def collect_rollout(self):
+        states, acts, rews, dones = [], [], [], []
+        old_logits = []
+        state, _ = self.env.reset()
+        state = torch.FloatTensor(state).to(device)
+        ep_rew = 0
+
+        for _ in range(self.group_size):
+            with torch.no_grad():
+                logits = self.actor(state)
+                dist = Categorical(logits=logits)
+                act = dist.sample()
+
+            next_state, rew, terminated, truncated, _ = self.env.step(act.item())
+            done = terminated or truncated
+            ep_rew += rew
+
+            states.append(state)
+            acts.append(act)
+            rews.append(rew)
+            dones.append(done)
+            old_logits.append(logits)
+
+            state = torch.FloatTensor(next_state).to(device) if not done else torch.FloatTensor(self.env.reset()[0]).to(device)
+
+            if done:
+                self.ep_rewards.append(ep_rew)
+                ep_rew = 0
+
+        returns = self._calc_returns(rews, dones)
+        advantages = (returns - returns.mean()) / (returns.std() + 1e-8)
+
+        return (
+            torch.stack(states),
+            torch.stack(acts),
+            advantages,
+            torch.stack(old_logits)
+        )
+
+    def train(self, total_updates=300):
+        self.actor.train()
+        for update in trange(total_updates):
+            states, actions, advantages, old_logits = self.collect_rollout()
+
+            dataset = torch.utils.data.TensorDataset(states, actions, advantages, old_logits)
+            loader = torch.utils.data.DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
+
+            policy_losses = []
+            kl_divergences = []
+
+            for _ in range(self.epochs):
+                for batch in loader:
+                    s_batch, a_batch, adv_batch, old_logits_batch = batch
+
+                    new_logits = self.actor(s_batch)
+                    old_dist = Categorical(logits=old_logits_batch.detach())
+                    new_dist = Categorical(logits=new_logits)
+
+                    logp_new = new_dist.log_prob(a_batch)
+                    logp_old = old_dist.log_prob(a_batch).detach()
+                    ratio = torch.exp(logp_new - logp_old)
+
+
+                    surr1 = ratio * adv_batch
+                    surr2 = torch.clamp(ratio, 1-self.clip_ratio, 1+self.clip_ratio) * adv_batch
+                    policy_loss = -torch.min(surr1, surr2).mean()
+
+
+                    kl = torch.distributions.kl.kl_divergence(old_dist, new_dist).mean()
+
+                    loss = policy_loss + self.beta * kl
+
+                    self.optimizer.zero_grad()
+                    loss.backward()
+                    torch.nn.utils.clip_grad_norm_(self.actor.parameters(), 0.5)
+                    self.optimizer.step()
+
+                    policy_losses.append(policy_loss.item())
+                    kl_divergences.append(kl.item())
+
+
+            if self.ep_rewards:
+                avg_rew = np.mean(self.ep_rewards[-20:])
+                wandb.log({
+                    &quot;update&quot;: update,
+                    &quot;avg_reward&quot;: avg_rew,
+                    &quot;policy_loss&quot;: np.mean(policy_losses),
+                    &quot;kl_divergence&quot;: np.mean(kl_divergences)
+                })
+
+def test(env, actor, episodes=5, render=False):
+    actor.eval()
+    for ep in range(episodes):
+        state, _ = env.reset()
+        total_rew = 0
+        while True:
+            if render:
+                env.render()
+            with torch.no_grad():
+                state_tensor = torch.FloatTensor(state).to(device)
+                logits = actor(state_tensor)
+                act = torch.argmax(logits).item()
+
+            state, rew, terminated, truncated, _ = env.step(act)
+            total_rew += rew
+
+            if terminated or truncated:
+                print(f&quot;Test Episode {ep+1} | Reward: {total_rew}&quot;)
+                break
+
+def main():
+    wandb.init(project=&quot;grpo-cartpole&quot;)
+
+    env = gym.make('CartPole-v1')
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.n
+
+    actor = ActorNetwork(state_dim, action_dim).to(device)
+    optimizer = optim.Adam(actor.parameters(), lr=3e-4)
+
+    trainer = GRPOTrainer(
+        env=env,
+        actor=actor,
+        optimizer=optimizer,
+        clip_ratio=0.2,
+        beta=0.001,
+        gamma=0.99,
+        epochs=10,
+        batch_size=32,
+        group_size=200
+    )
+
+    trainer.train(total_updates=1000)
+
+    test_env = gym.make('CartPole-v1', render_mode='human')
+    test(test_env, actor, episodes=3, render=True)
+    env.close()
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></div>
+            </div>
+        </div>
+
+        <footer class="col-md-12">
+            <hr>
+            <p>Documentation built with <a href="https://www.mkdocs.org/">MkDocs</a>.</p>
+        </footer>
+        <script src="../js/jquery-3.6.0.min.js"></script>
+        <script src="../js/bootstrap.min.js"></script>
+        <script>
+            var base_url = "..",
+                shortcuts = {"help": 191, "next": 78, "previous": 80, "search": 83};
+        </script>
+        <script src="../js/base.js"></script>
+        <script src="../search/main.js"></script>
+
+        <div class="modal" id="mkdocs_search_modal" tabindex="-1" role="dialog" aria-labelledby="searchModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="searchModalLabel">Search</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+                <p>From here you can search these documents. Enter your search terms below.</p>
+                <form>
+                    <div class="form-group">
+                        <input type="search" class="form-control" placeholder="Search..." id="mkdocs-search-query" title="Type search term here">
+                    </div>
+                </form>
+                <div id="mkdocs-search-results" data-no-results-text="No results found"></div>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div><div class="modal" id="mkdocs_keyboard_modal" tabindex="-1" role="dialog" aria-labelledby="keyboardModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="keyboardModalLabel">Keyboard Shortcuts</h4>
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            </div>
+            <div class="modal-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th style="width: 20%;">Keys</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td class="help shortcut"><kbd>?</kbd></td>
+                    <td>Open this help</td>
+                  </tr>
+                  <tr>
+                    <td class="next shortcut"><kbd>n</kbd></td>
+                    <td>Next page</td>
+                  </tr>
+                  <tr>
+                    <td class="prev shortcut"><kbd>p</kbd></td>
+                    <td>Previous page</td>
+                  </tr>
+                  <tr>
+                    <td class="search shortcut"><kbd>s</kbd></td>
+                    <td>Search</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+            </div>
+        </div>
+    </div>
+</div>
+
+    </body>
+</html>
