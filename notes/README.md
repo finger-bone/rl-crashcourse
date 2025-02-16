@@ -4,11 +4,13 @@ Welcome to the RL Crash Course, a concise introduction to key concepts in Reinfo
 
 You’ll explore:
 
-- Q Learning and Deep Q Networks (DQN) – Learning optimal policies using value iteration and deep neural networks.
-- Policy Gradient Methods – Directly optimizing policies for continuous and discrete action spaces.
-- Actor-Critic Architectures – Combining value-based and policy-based methods for more stable learning.
-- Proximal Policy Optimization (PPO) – A widely used on-policy optimization method balancing exploration and exploitation.
-- GRPO (Group Relative Policy Optimization) – A reinforcement learning method originally designed for LLM.
+1. Q Learning and Deep Q Networks (DQN) – Learning optimal policies using value iteration and deep neural networks.
+2. Policy Gradient Methods – Directly optimizing policies for continuous and discrete action spaces.
+3. Actor-Critic Architectures – Combining value-based and policy-based methods for more stable learning.
+4. Proximal Policy Optimization (PPO) – A widely used on-policy optimization method balancing exploration and exploitation.
+5. GRPO (Group Relative Policy Optimization) – A reinforcement learning method originally designed for LLM.
+
+The chapters are,
 
 - [Q Learning and DQN](01.md)
 - [Policy Gradient](02.md)
