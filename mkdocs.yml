@@ -1,0 +1,14 @@
+site_name: Reinforcement Learning Crashcourse
+site_url: https://finger-bone.github.io/rl-crashcourse/
+site_description: Reinfrocement Learning with Gym and PyTorch
+
+theme: lux
+
+docs_dir: notes
+
+nav:
+- Q Learning and DQN: notes/01.md
+- Policy Gradient: notes/02.md
+- Actor-Critic: notes/03.md
+- PPO: notes/04.md
+- GRPO: notes/05.md
