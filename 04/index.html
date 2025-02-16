@@ -122,11 +122,17 @@ L = -\mathbb{E}(\log(\pi_\theta(a_t|s_t)) A)
 L^{CLIP}(\theta) = \hat{\mathbb{E}}_t \left[ \min \left( r_t(\theta) \hat{A}_t, \text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon) \hat{A}_t \right) \right]
 </script>
 </p>
-<p>Where:
-- <script type="math/tex">r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}</script> is the probability ratio between the new policy and the old policy.
-- <script type="math/tex">\hat{A}_t</script> is the advantage estimate at time step <script type="math/tex">t</script>.
-- <script type="math/tex">\epsilon</script> is a hyperparameter that defines the clipping range (usually small, such as 0.1 or 0.2).
-- <script type="math/tex">\text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon)</script> is the clipped ratio that limits how much the probability ratio can change.</p>
+<p>Where:</p>
+<ul>
+<li>
+<script type="math/tex">r_t(\theta) = \frac{\pi_\theta(a_t | s_t)}{\pi_{\theta_{\text{old}}}(a_t | s_t)}</script> is the probability ratio between the new policy and the old policy.</li>
+<li>
+<script type="math/tex">\hat{A}_t</script> is the advantage estimate at time step <script type="math/tex">t</script>.</li>
+<li>
+<script type="math/tex">\epsilon</script> is a hyperparameter that defines the clipping range (usually small, such as 0.1 or 0.2).</li>
+<li>
+<script type="math/tex">\text{clip}(r_t(\theta), 1 - \epsilon, 1 + \epsilon)</script> is the clipped ratio that limits how much the probability ratio can change.</li>
+</ul>
 <p>This modification ensures that if the new policy makes a drastic change, the objective function will be "penalized" by the clipping, discouraging large updates. On the other hand, if the change is small (i.e., the ratio <script type="math/tex">r_t(\theta)</script> is within the clipping bounds), the objective behaves as a standard policy gradient loss.</p>
 <h3 id="how-to-obtain-r_ttheta">How to Obtain <script type="math/tex">r_t(\theta)</script> ?</h3>
 <p>An engineering problem here is that how to get the old distribution. We only need to firstly, run multiple inferences in a batch without gradient, then for each entry in the batch, update the model. For the first entry, the <script type="math/tex">r_t(\theta)</script> would stay as one, but for the later ones, it's value is correct.</p>
