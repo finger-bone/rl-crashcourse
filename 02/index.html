@@ -109,11 +109,16 @@
 L(\theta) = -\mathbb{E} \big[ \log \pi_\theta(a|s) \cdot A \big]
 </script>
 </p>
-<p>Here:
-- <script type="math/tex">\pi_\theta(a|s)</script>: The policy, which gives the probability of taking action <script type="math/tex">a</script> in state <script type="math/tex">s</script>.
-- <script type="math/tex">A</script>: The advantage value. For now, it can equal to the cumulative reward for the given action.
-- The negative sign ensures we maximize rewards (since optimization minimizes the loss).
-- <script type="math/tex">\mathbb{E}</script> is done over all actions in an episode.</p>
+<p>Here:</p>
+<ul>
+<li>
+<script type="math/tex">\pi_\theta(a|s)</script>: The policy, which gives the probability of taking action <script type="math/tex">a</script> in state <script type="math/tex">s</script>.</li>
+<li>
+<script type="math/tex">A</script>: The advantage value. For now, it can equal to the cumulative reward for the given action.</li>
+<li>The negative sign ensures we maximize rewards (since optimization minimizes the loss).</li>
+<li>
+<script type="math/tex">\mathbb{E}</script> is done over all actions in an episode.</li>
+</ul>
 <h3 id="steps-for-policy-gradient-algorithm">Steps for Policy Gradient Algorithm:</h3>
 <ol>
 <li><strong>Initialize the Policy Network</strong>: </li>

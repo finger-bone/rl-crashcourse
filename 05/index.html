@@ -125,11 +125,17 @@ L^{GRPO}(\theta) = \mathbb{E}\left[
 \right]
 </script>
 </p>
-<p>Where:
-- <script type="math/tex">A_{i} = \frac{r_{i} - \mathrm{mean}(\{r_1, r_2, \cdots, r_G\})}{\mathrm{std}(\{r_1, r_2, \cdots, r_G\})}</script> is the normalized advantage computed from a group of samples. Please note that, in GRPO, we use this group-normalized reward instead of GAE. The latter requires a critic model, which we do not have in GRPO.
-- <script type="math/tex">\pi_{\theta}</script> and <script type="math/tex">\pi_{\theta_{\text{old}}}</script> are the new and old policies, respectively.
-- <script type="math/tex">\varepsilon</script> is a hyperparameter that controls the range of policy updates.
-- <script type="math/tex">\beta</script> is a regularization parameter that controls the KL divergence between the new policy and a reference policy <script type="math/tex">\pi_{\text{ref}}</script>. This functions the same as the entropy regulation trick we talked about in the last chapter, it is just that GRPO uses KL divergence instead of simple entropy (KL divergence is just entropy difference).</p>
+<p>Where:</p>
+<ul>
+<li>
+<script type="math/tex">A_{i} = \frac{r_{i} - \mathrm{mean}(\{r_1, r_2, \cdots, r_G\})}{\mathrm{std}(\{r_1, r_2, \cdots, r_G\})}</script> is the normalized advantage computed from a group of samples. Please note that, in GRPO, we use this group-normalized reward instead of GAE. The latter requires a critic model, which we do not have in GRPO.</li>
+<li>
+<script type="math/tex">\pi_{\theta}</script> and <script type="math/tex">\pi_{\theta_{\text{old}}}</script> are the new and old policies, respectively.</li>
+<li>
+<script type="math/tex">\varepsilon</script> is a hyperparameter that controls the range of policy updates.</li>
+<li>
+<script type="math/tex">\beta</script> is a regularization parameter that controls the KL divergence between the new policy and a reference policy <script type="math/tex">\pi_{\text{ref}}</script>. This functions the same as the entropy regulation trick we talked about in the last chapter, it is just that GRPO uses KL divergence instead of simple entropy (KL divergence is just entropy difference).</li>
+</ul>
 <h2 id="advantages-of-grpo">Advantages of GRPO</h2>
 <ol>
 <li><strong>No Critic Network Required</strong>: By eliminating the need for a critic network, GRPO simplifies the model architecture and reduces computational overhead.</li>
