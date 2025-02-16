@@ -2,7 +2,11 @@ site_name: Reinforcement Learning Crashcourse
 site_url: https://finger-bone.github.io/rl-crashcourse/
 site_description: Reinfrocement Learning with Gym and PyTorch
 
-theme: lux
+theme:
+  name: lux
+  font:
+    text: Inter
+    code: Fira Code
 
 docs_dir: notes
 
